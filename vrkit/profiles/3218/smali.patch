@@ -1,0 +1,171 @@
+--- a/smali_classes2/com/roblox/client/ActivityNativeMain.smali
++++ b/smali_classes2/com/roblox/client/ActivityNativeMain.smali
+@@ -3782,4 +3782,10 @@
+     invoke-static {v0}, Lcom/roblox/universalapp/logging/LoggingProtocol;->g(Ljava/lang/String;)V
++
++    const-string v0, "{\"FFlagDebugEnableVREmulator\":\"True\",\"FFlagDebugVRAppBuildInStudio\":\"True\",\"FFlagDUARPassVREnabled\":\"True\",\"FFlagExposeOpenXrAPI1\":\"True\",\"FFlagUserFlagEnableVRUpdate2\":\"True\",\"FFlagUserFlagEnableVRUpdate3\":\"True\"}"
+ 
++    invoke-static {v0}, Lcom/roblox/client/startup/MainGameActivity;->a2(Ljava/lang/String;)V
++
+     invoke-super {p0, p1}, Lcom/roblox/client/a;->onCreate(Landroid/os/Bundle;)V
++
++    invoke-static {p0}, Lcom/phonexr/roblox/PhoneXRBridge;->start(Landroid/app/Activity;)V
+ 
+@@ -4457,2 +4463,4 @@
+     .locals 3
++
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->stop()V
+ 
+@@ -4598,2 +4606,17 @@
+ 
++.method public dispatchGenericMotionEvent(Landroid/view/MotionEvent;)Z
++    .locals 1
++
++    invoke-static {p0, p1}, Lcom/phonexr/roblox/ControllerManager;->dispatchMotion(Landroid/app/Activity;Landroid/view/MotionEvent;)Z
++    move-result v0
++    if-eqz v0, :pxr_m
++    const/4 v0, 0x1
++    return v0
++
++    :pxr_m
++    invoke-super {p0, p1}, Lcom/roblox/client/a;->dispatchGenericMotionEvent(Landroid/view/MotionEvent;)Z
++    move-result v0
++    return v0
++.end method
++
+ .method public onKeyDown(ILandroid/view/KeyEvent;)Z
+@@ -4601,2 +4624,10 @@
+ 
++    invoke-static {p0, p2}, Lcom/phonexr/roblox/ControllerManager;->dispatchKey(Landroid/app/Activity;Landroid/view/KeyEvent;)Z
++    move-result v0
++    if-eqz v0, :pxr_kd
++    const/4 v0, 0x1
++    return v0
++
++    :pxr_kd
++
+     sget-object v0, Lkk/g;->a:Lkk/g;
+@@ -4632,2 +4663,10 @@
+ 
++    invoke-static {p0, p2}, Lcom/phonexr/roblox/ControllerManager;->dispatchKey(Landroid/app/Activity;Landroid/view/KeyEvent;)Z
++    move-result v0
++    if-eqz v0, :pxr_ku
++    const/4 v0, 0x1
++    return v0
++
++    :pxr_ku
++
+     sget-object v0, Lkk/g;->a:Lkk/g;
+@@ -5274,2 +5313,4 @@
+     invoke-super {p0}, Lcom/roblox/client/a;->onPause()V
++
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->pause()V
+ 
+@@ -5368,2 +5409,4 @@
+     invoke-super {p0}, Lcom/roblox/client/a;->onResume()V
++
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->resume()V
+ 
+--- a/smali_classes2/com/roblox/client/RbxKeyboard.smali
++++ b/smali_classes2/com/roblox/client/RbxKeyboard.smali
+@@ -77,2 +77,4 @@
+     .locals 2
++
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->onHideKeyboard()V
+ 
+--- a/smali_classes2/com/roblox/client/startup/ActivitySplash.smali
++++ b/smali_classes2/com/roblox/client/startup/ActivitySplash.smali
+@@ -734,2 +734,4 @@
+     invoke-virtual {p0, v0}, Lcom/roblox/client/a;->setContentView(I)V
++
++    invoke-static {p0}, Lcom/phonexr/roblox/PhoneXRBridge;->showSplash(Landroid/app/Activity;)V
+ 
+--- a/smali_classes2/com/roblox/client/startup/MainGameActivity.smali
++++ b/smali_classes2/com/roblox/client/startup/MainGameActivity.smali
+@@ -1136,3 +1136,7 @@
+     .locals 7
++
++    const-string v0, "{\"FFlagDebugEnableVREmulator\":\"True\",\"FFlagDebugVRAppBuildInStudio\":\"True\",\"FFlagDUARPassVREnabled\":\"True\",\"FFlagExposeOpenXrAPI1\":\"True\",\"FFlagUserFlagEnableVRUpdate2\":\"True\",\"FFlagUserFlagEnableVRUpdate3\":\"True\",\"FFlagDebugGraphicsPreferOpenGL\":\"True\",\"FFlagDebugGraphicsDisableVulkan\":\"True\",\"FFlagDebugGraphicsDisableOpenGL\":\"False\"}"
+ 
++    invoke-static {v0}, Lcom/roblox/client/startup/MainGameActivity;->nativePreloadFlagOverrides(Ljava/lang/String;)V
++
+     invoke-static {}, Liu/g1;->b()Liu/l0;
+@@ -1977,2 +1981,4 @@
+     invoke-virtual {p0}, Lcom/roblox/client/startup/MainGameActivity;->q2()V
++
++    invoke-static {p0}, Lcom/phonexr/roblox/PhoneXRBridge;->start(Landroid/app/Activity;)V
+ 
+@@ -2042,2 +2048,4 @@
+     :cond_0
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->stop()V
++
+     invoke-super {p0}, Lcom/google/androidgamesdk/GameActivity;->onDestroy()V
+@@ -2054,2 +2062,9 @@
+ 
++    invoke-static {p0, p2}, Lcom/phonexr/roblox/ControllerManager;->dispatchKey(Landroid/app/Activity;Landroid/view/KeyEvent;)Z
++    move-result v0
++    if-eqz v0, :pxr_kd
++    const/4 v0, 0x1
++    return v0
++
++    :pxr_kd
+     const-string v0, "event"
+@@ -2084,2 +2099,17 @@
+     return p1
++.end method
++
++.method public dispatchGenericMotionEvent(Landroid/view/MotionEvent;)Z
++    .locals 1
++
++    invoke-static {p0, p1}, Lcom/phonexr/roblox/ControllerManager;->dispatchMotion(Landroid/app/Activity;Landroid/view/MotionEvent;)Z
++    move-result v0
++    if-eqz v0, :pxr_m
++    const/4 v0, 0x1
++    return v0
++
++    :pxr_m
++    invoke-super {p0, p1}, Lcom/google/androidgamesdk/GameActivity;->dispatchGenericMotionEvent(Landroid/view/MotionEvent;)Z
++    move-result v0
++    return v0
+ .end method
+@@ -2092,3 +2122,11 @@
+     .end param
++
++    invoke-static {p0, p2}, Lcom/phonexr/roblox/ControllerManager;->dispatchKey(Landroid/app/Activity;Landroid/view/KeyEvent;)Z
++    move-result v0
++    if-eqz v0, :pxr_ku
++    const/4 v0, 0x1
++    return v0
+ 
++    :pxr_ku
++
+     const-string v0, "event"
+@@ -2150,2 +2188,4 @@
+ 
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->pause()V
++
+     invoke-static {}, Lrh/h;->a()Lrh/i;
+@@ -2257,2 +2297,4 @@
+     invoke-super {p0}, Lcom/google/androidgamesdk/GameActivity;->onResume()V
++
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->resume()V
+ 
+--- a/smali_classes2/com/roblox/engine/jni/NativeGLJavaInterface.smali
++++ b/smali_classes2/com/roblox/engine/jni/NativeGLJavaInterface.smali
+@@ -91,2 +91,4 @@
+     .locals 1
++
++    invoke-static {}, Lcom/phonexr/roblox/PhoneXRBridge;->gameLeft()V
+ 
+@@ -104,2 +106,4 @@
+     .locals 1
++
++    invoke-static {p0, p1}, Lcom/phonexr/roblox/PhoneXRBridge;->gameLoaded(J)V
+ 
+--- a/smali_classes2/rg/a2.smali
++++ b/smali_classes2/rg/a2.smali
+@@ -444,2 +444,4 @@
+     if-eqz p0, :cond_0
++
++    invoke-static {p0}, Lcom/phonexr/roblox/PhoneXRBridge;->onShowKeyboard(Landroid/view/View;)V
+ 

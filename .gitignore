@@ -1,0 +1,13 @@
+.build/
+dist/
+.DS_Store
+phonexr-bridge/build/
+phonexr-bridge/hand_landmarker.task
+vrkit/payload/
+vrkit/tools/*.jar
+*.apk
+*.apks
+*.apkm
+*.xapk
+*.keystore
+*.idsig
