@@ -130,7 +130,7 @@ public final class ControllerManager implements InputManager.InputDeviceListener
         snapDegrees = Math.max(15, prefs.getInt("pref_snap_degrees", 30));
         raysEnabled = prefs.getBoolean("pref_rays", true);
         swapSticks = prefs.getBoolean("pref_swap_sticks", false);
-        handGestures = false; // no click-by-gesture: clicks come from pads / screen button
+        handGestures = prefs.getBoolean("pref_no_controller", false); // experimental: no controller, hands click and walk
         // Joy-Cons are buttons by default; hands come from the camera.
         boolean motion = joyConEnabled && prefs.getInt("controller_kind", 0) == 0 && prefs.getBoolean("pref_nintendo_motion", true);
         motionSensitivity = Math.max(0.2f, prefs.getInt("pref_joycon_motion_sens", 100) / 100f);
@@ -266,8 +266,8 @@ public final class ControllerManager implements InputManager.InputDeviceListener
         menuPinch(1, inMenu && rightPinch, rightY);
         setGesture(0, KeyEvent.KEYCODE_BUTTON_L2, (inGame && leftPinch) || clickPulse[0]);
         setGesture(1, KeyEvent.KEYCODE_BUTTON_R2, (inGame && rightPinch) || clickPulse[1] || screenDown);
-        setGesture(2, KeyEvent.KEYCODE_BUTTON_L1, inGame && leftFist && !motionFresh(0));
-        setGesture(3, KeyEvent.KEYCODE_BUTTON_R1, inGame && rightFist && !motionFresh(1));
+        // Experimental hand mode: a closed fist (either hand) walks forward.
+        setFistWalk(handGestures && inGame && (leftFist || rightFist));
         if (!motionFresh(0)) {
             if (leftX >= 0f) {
                 leftSeen = now;
@@ -372,7 +372,7 @@ public final class ControllerManager implements InputManager.InputDeviceListener
             if (!mPinch[hand]) { mPinch[hand] = true; mScroll[hand] = false; mStartY[hand] = y; }
             float dy = y - mStartY[hand];
             if (!mScroll[hand] && Math.abs(dy) > SCROLL_START) mScroll[hand] = true;
-            if (mScroll[hand]) sendScroll(Math.max(-1f, Math.min(1f, dy * SCROLL_GAIN)));
+            if (mScroll[hand]) sendScroll(-Math.max(-1f, Math.min(1f, dy * SCROLL_GAIN))); // hand down = stick down
         } else if (mPinch[hand]) {
             mPinch[hand] = false;
             if (mScroll[hand]) {
@@ -387,23 +387,104 @@ public final class ControllerManager implements InputManager.InputDeviceListener
         }
     }
 
+    private boolean fistWalk;
+    private float arWalkX, arWalkY, sentWalkX, sentWalkY;
+
+    private void setFistWalk(boolean on) {
+        if (fistWalk == on) return;
+        fistWalk = on;
+        applyWalk();
+    }
+
+    /** Real-world steps from ARCore (stick x, y). */
+    void setBodyWalk(float x, float y) {
+        arWalkX = x;
+        arWalkY = y;
+        applyWalk();
+    }
+
+    private void applyWalk() {
+        boolean game = bridge != null && bridge.getSceneMode() == PhoneXRBridge.SCENE_GAME;
+        float x = game ? arWalkX : 0f;
+        float y = game ? Math.max(-1f, Math.min(1f, arWalkY + (fistWalk ? 1f : 0f))) : 0f;
+        if (Math.abs(leftStickX) > 0.05f || Math.abs(leftStickY) > 0.05f) return; // a real pad owns the stick
+        if (Math.abs(x - sentWalkX) < 0.04f && Math.abs(y - sentWalkY) < 0.04f && !((x == 0f && y == 0f) && (sentWalkX != 0f || sentWalkY != 0f))) return;
+        sentWalkX = x;
+        sentWalkY = y;
+        try {
+            ensureConnected();
+            NativeInputInterface.nativeGamepadAxisEvent(VIRTUAL_ID, 0, x, y, 0f);
+        } catch (Throwable ignored) { }
+    }
+
     private void sendScroll(float v) {
         try { ensureConnected(); NativeInputInterface.nativeGamepadAxisEvent(VIRTUAL_ID, 1, 0f, v, 0f); } catch (Throwable ignored) { }
     }
 
+    private volatile boolean screenA;
+
+    /** Cardboard button: in the Roblox home menu a tap is the A button, in a game it is the trigger. */
     void screenClick(boolean down) {
-        screenDown = down;
-        setGesture(1, KeyEvent.KEYCODE_BUTTON_R2, down);
+        boolean home = bridge != null && bridge.getSceneMode() == PhoneXRBridge.SCENE_HOME;
+        if (down) {
+            if (home) {
+                screenA = true;
+                try {
+                    ensureConnected();
+                    NativeInputInterface.nativeGamepadButtonEvent(VIRTUAL_ID, KeyEvent.KEYCODE_BUTTON_A, 1);
+                } catch (Throwable ignored) { }
+            } else {
+                screenDown = true;
+                setGesture(1, KeyEvent.KEYCODE_BUTTON_R2, true);
+            }
+        } else {
+            if (screenA) {
+                screenA = false;
+                try { NativeInputInterface.nativeGamepadButtonEvent(VIRTUAL_ID, KeyEvent.KEYCODE_BUTTON_A, 0); }
+                catch (Throwable ignored) { }
+            }
+            if (screenDown) {
+                screenDown = false;
+                setGesture(1, KeyEvent.KEYCODE_BUTTON_R2, false);
+            }
+        }
+    }
+
+    /** True while no hand is tracked and the pointer follows the view direction. */
+    private int gazeTick;
+
+    /** Called every UI tick: with no hand tracked (menu / home) the pointer follows the view direction. */
+    void tickGaze() {
+        long now = System.nanoTime();
+        boolean scene = bridge != null && bridge.getSceneMode() != PhoneXRBridge.SCENE_GAME
+                && bridge.getSceneMode() != PhoneXRBridge.SCENE_LOADING;
+        boolean none = scene && now - leftSeen >= HAND_HOLD_NS && now - rightSeen >= HAND_HOLD_NS
+                && !motionFresh(0) && !motionFresh(1);
+        if (none) {
+            boolean first = !gaze;
+            if (first) {
+                gaze = true;
+                Log.i(TAG, "gaze pointer on");
+                try { PhoneXRBridge.setGazeMode(true); } catch (Throwable ignored) { }
+            }
+            rightRayX = 0.5f;
+            rightRayY = 0.5f;
+            rightRayActive = true;
+            leftRayActive = false;
+            if (first || ++gazeTick % 6 == 0) publishHands();
+        } else if (gaze) {
+            gaze = false;
+            try { PhoneXRBridge.setGazeMode(false); } catch (Throwable ignored) { }
+            rightRayActive = false;
+            publishHands();
+        }
+    }
+
+    boolean isGaze() {
+        return gaze;
     }
 
     private void publishHands() {
-        boolean noHands = !leftRayActive && !rightRayActive
-                && bridge != null && bridge.getSceneMode() != PhoneXRBridge.SCENE_GAME;
-        if (noHands != gaze) {
-            gaze = noHands;
-            try { PhoneXRBridge.setGazeMode(gaze); } catch (Throwable ignored) { }
-        }
-        if (gaze) { rightRayX = 0.5f; rightRayY = 0.5f; rightRayActive = true; }
         updateRaysToCompositor();
         PhoneXRBridge.setHands(leftRayX, leftRayY, leftAngle, leftScale, leftRayActive,
                 rightRayX, rightRayY, rightAngle, rightScale, rightRayActive, handsVisible);

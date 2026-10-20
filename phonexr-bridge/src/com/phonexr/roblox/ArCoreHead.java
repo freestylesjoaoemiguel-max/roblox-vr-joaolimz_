@@ -161,6 +161,11 @@ final class ArCoreHead {
         }
     }
 
+    private static final float WALK_MIN = 0.15f, WALK_MAX = 1.0f; // m/s
+    private boolean haveLast;
+    private float lastX, lastZ, velX, velZ;
+    private long lastStepNs;
+
     private void step() throws Exception {
         Frame frame = session.update();
         Camera camera = frame.getCamera();
@@ -179,6 +184,27 @@ final class ArCoreHead {
                 recenterRequested = false;
                 originX = x; originY = y; originZ = z;
             }
+            long now = System.nanoTime();
+            if (haveLast) {
+                float dt = (now - lastStepNs) * 1e-9f;
+                if (dt > 0.001f && dt < 0.5f) {
+                    float cw = (float) Math.cos(-yawOffset), sw = (float) Math.sin(-yawOffset);
+                    float vxw = (x - lastX) / dt, vzw = (z - lastZ) / dt;
+                    float vx = vxw * cw - vzw * sw, vz = vzw * cw + vxw * sw; // tracking space, m/s
+                    velX += (vx - velX) * 0.2f;
+                    velZ += (vz - velZ) * 0.2f;
+                    float yaw = sink.headYaw();
+                    float fwd = velX * (float) Math.sin(yaw) - velZ * (float) Math.cos(yaw);
+                    float rgt = velX * (float) Math.cos(yaw) + velZ * (float) Math.sin(yaw);
+                    float mag = (float) Math.hypot(fwd, rgt);
+                    float k = mag < WALK_MIN ? 0f : Math.min(1f, (mag - WALK_MIN) / (WALK_MAX - WALK_MIN)) / mag;
+                    PhoneXRBridge.onPhysicalWalk(rgt * k, fwd * k);
+                }
+            }
+            haveLast = true; lastX = x; lastZ = z; lastStepNs = now;
+            // Steady walking moves the character, so the camera offset follows slowly; leaning stays.
+            originX += (x - originX) * 0.03f;
+            originZ += (z - originZ) * 0.03f;
             float dx = x - originX, dy = y - originY, dz = z - originZ;
             // Rotate the AR-world offset into the head's yaw frame (yaw right positive).
             float c = (float) Math.cos(-yawOffset), s = (float) Math.sin(-yawOffset);

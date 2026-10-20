@@ -1,0 +1,78 @@
+{
+ "versionCode": 3222,
+ "lib": "libphonexrvr_3222.so",
+ "patches": [
+  {
+   "off": "0x4a28dac",
+   "before": "e8bffdf000e1c03de8031faa0900088b08c10091",
+   "after": "703c01d010fa47f9500000b400021fd6c0035fd6"
+  },
+  {
+   "off": "0x4a28dc0",
+   "before": "2ab105912bf10591293106911f0103f14001803d6001803d",
+   "after": "703c01d000e27f39c0035fd6703c01d001e27f39c0035fd6"
+  },
+  {
+   "off": "0x263bed0",
+   "before": "00c44139",
+   "after": "bcb38f14"
+  },
+  {
+   "off": "0x24a0114",
+   "before": "00c002d101000014",
+   "after": "2b2396141f2003d5"
+  },
+  {
+   "off": "0x272fc90",
+   "before": "e1031f2a",
+   "after": "4fe48b94"
+  },
+  {
+   "off": "0x5981184",
+   "before": "c8030036",
+   "after": "1f2003d5"
+  },
+  {
+   "off": "0x59812b0",
+   "before": "88030036",
+   "after": "1f2003d5"
+  },
+  {
+   "off": "0x59813dc",
+   "before": "48030036",
+   "after": "1f2003d5"
+  },
+  {
+   "off": "0x598157c",
+   "before": "a8020036",
+   "after": "1f2003d5"
+  },
+  {
+   "off": "0x2bb1614",
+   "before": "1f010071e003891a",
+   "after": "1f2003d520008052"
+  },
+  {
+   "off": "0x259b66c",
+   "before": "08216e39",
+   "after": "28008052"
+  },
+  {
+   "off": "0x259c440",
+   "before": "08614e39",
+   "after": "28008052"
+  }
+ ],
+ "stubs": [
+  {
+   "file": "smali_classes2/com/roblox/client/d.smali",
+   "signature": ".method public b(Lcom/roblox/client/d$d;)V",
+   "body": "stub_b.smali"
+  },
+  {
+   "file": "smali_classes2/com/roblox/client/d.smali",
+   "signature": ".method public f()Z",
+   "body": "stub_f.smali"
+  }
+ ]
+}

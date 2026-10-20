@@ -89,7 +89,13 @@ def find(old, new, offset, text_end, before=BEFORE, after=AFTER):
 def main():
     old = open(sys.argv[1], "rb").read()
     new = open(sys.argv[2], "rb").read()
-    text_end = 0x638ca10
+    # end of the executable segment of the new library
+    phoff = struct.unpack_from("<Q", new, 0x20)[0]
+    text_end = 0
+    for i in range(struct.unpack_from("<H", new, 0x38)[0]):
+        p_type, p_flags, _, _, _, p_filesz = struct.unpack_from("<IIQQQQ", new, phoff + i * 56)
+        if p_type == 1 and p_flags & 1:
+            text_end = max(text_end, p_filesz)
     for arg in sys.argv[3:]:
         off = int(arg, 16)
         hit, score, top = find(old, new, off, text_end)

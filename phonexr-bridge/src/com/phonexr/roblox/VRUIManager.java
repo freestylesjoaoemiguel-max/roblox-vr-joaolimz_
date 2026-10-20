@@ -289,7 +289,7 @@ public final class VRUIManager {
         } else if (item.id == SET_SKELETON) {
             prefs.edit().putBoolean("pref_hand_skeleton", !prefs.getBoolean("pref_hand_skeleton", false)).apply();
         } else if (item.id == SET_6DOF) {
-            prefs.edit().putBoolean("pref_6dof2", !prefs.getBoolean("pref_6dof2", false)).apply();
+            prefs.edit().putBoolean("pref_6dof", !prefs.getBoolean("pref_6dof", false)).apply();
         } else if (item.id == SET_JUMP) {
             prefs.edit().putBoolean("pref_body_jump", !prefs.getBoolean("pref_body_jump", true)).apply();
         } else if (item.id == SET_ULTRAWIDE) {
@@ -447,7 +447,7 @@ public final class VRUIManager {
 
             boolean toggle = b.id != SET_HEADSET;
             boolean on = b.id == SET_SKELETON ? prefs.getBoolean("pref_hand_skeleton", false)
-                    : b.id == SET_6DOF ? prefs.getBoolean("pref_6dof2", false)
+                    : b.id == SET_6DOF ? prefs.getBoolean("pref_6dof", false)
                     : b.id == SET_SWAP ? prefs.getBoolean("pref_swap_sticks", false)
                     : b.id == SET_GESTURES ? prefs.getBoolean("pref_hand_gestures", true)
                     : b.id == SET_ULTRAWIDE ? prefs.getBoolean("pref_ultrawide", false)

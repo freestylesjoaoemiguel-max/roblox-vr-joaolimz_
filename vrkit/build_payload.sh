@@ -28,7 +28,7 @@ A="$B/mediapipe-artifacts"
   "$MP/transport-backend-cct-3.1.0/classes.jar" "$MP/transport-runtime-3.1.0/classes.jar"
 
 # --- third-party natives + assets
-cp "$MP/core/jni/arm64-v8a/libmediapipe_tasks_jni.so" "$P/lib/"
+cp "$MP/core/jni/arm64-v8a/libmediapipe_tasks_jni.so" "$MP/arcore/jni/arm64-v8a/libarcore_sdk_c.so" "$MP/arcore/jni/arm64-v8a/libarcore_sdk_jni.so" "$P/lib/"
 cp "$PX/hand_landmarker.task" "$PX/assets/MaterialSymbolsRounded.ttf" "$P/assets/"
 
 # --- libphonexrvr per profile

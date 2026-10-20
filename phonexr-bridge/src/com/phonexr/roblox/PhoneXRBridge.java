@@ -64,6 +64,8 @@ public final class PhoneXRBridge implements SensorEventListener {
     private VRUIManager vrUiManager;
 
     private boolean cameraHands = false;
+    /** Experimental: no controller at all - hand gestures click, a fist walks. */
+    private boolean noController;
     private boolean touchLayout = true;
     private int controllerType = 0;
     private boolean swapControllers = false;
@@ -213,7 +215,7 @@ public final class PhoneXRBridge implements SensorEventListener {
                 eye.addView(text, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT));
                 TextView by = new TextView(activity);
-                by.setText("By Samrat :)  ·  Alpha 26.3.0");
+                by.setText("By Samrat :)  ·  Alpha 26.3.1");
                 by.setTextColor(0xCCFFFFFF);
                 by.setTextSize(14f);
                 by.setGravity(Gravity.CENTER);
@@ -232,6 +234,12 @@ public final class PhoneXRBridge implements SensorEventListener {
         } catch (Throwable error) {
             Log.w(TAG, "Loading splash failed", error);
         }
+    }
+
+    /** Real-world walking seen by ARCore (stick x right, y forward, -1..1): the character walks too. */
+    public static void onPhysicalWalk(float x, float y) {
+        PhoneXRBridge b = instance;
+        if (b != null && b.controllerManager != null) b.controllerManager.setBodyWalk(x, y);
     }
 
     public static synchronized PhoneXRBridge getInstance() {
@@ -326,6 +334,31 @@ public final class PhoneXRBridge implements SensorEventListener {
 
     /** Phone-UI phase: flat Roblox + a bar. The user logs in / picks a game, then starts VR. */
     private View clickOverlay;
+    private View reticle;
+
+    /** A small dot in the centre of each eye: where the gaze pointer clicks in the home menu. */
+    private final class Reticle extends View {
+        private boolean drawLogged;
+        private final android.graphics.Paint dot = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Paint ring = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+
+        Reticle(Context c) {
+            super(c);
+            dot.setColor(0xFFFFFFFF);
+            ring.setColor(0xCC000000);
+        }
+
+        @Override
+        protected void onDraw(android.graphics.Canvas canvas) {
+            float d = getResources().getDisplayMetrics().density;
+            float w = getWidth(), h = getHeight();
+            if (!drawLogged) { drawLogged = true; Log.i(TAG, "reticle onDraw " + w + "x" + h); }
+            for (float cx : new float[]{0.2785f * w, 0.7215f * w}) {
+                canvas.drawCircle(cx, h / 2f, 6f * d, ring);
+                canvas.drawCircle(cx, h / 2f, 4f * d, dot);
+            }
+        }
+    }
 
     /** Cardboard-style button: touching the screen anywhere is a click (trigger). */
     private void addClickOverlay() {
@@ -342,6 +375,11 @@ public final class PhoneXRBridge implements SensorEventListener {
             });
             clickOverlay = v;
             activity.addContentView(v, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            reticle = new Reticle(activity);
+            reticle.setVisibility(View.GONE);
+            reticle.setElevation(1000f);
+            reticle.setWillNotDraw(false);
+            activity.addContentView(reticle, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             if (settingsGear != null) settingsGear.bringToFront();
         });
     }
@@ -471,6 +509,14 @@ public final class PhoneXRBridge implements SensorEventListener {
                     // Roblox keeps resetting the screen to portrait: hold landscape for the headset.
                     if (vrActive && activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                    if (controllerManager != null) controllerManager.tickGaze();
+                    if (reticle != null) {
+                        boolean show = vrActive && sceneMode == SCENE_HOME && controllerManager != null && controllerManager.isGaze();
+                        if ((reticle.getVisibility() == View.VISIBLE) != show) {
+                            reticle.setVisibility(show ? View.VISIBLE : View.GONE);
+                            Log.i(TAG, "reticle " + (show ? "shown" : "hidden"));
+                        }
+                    }
                     vrUiManager.updateAndUpload();
                     // Roblox sets its content view after start() and adds views later, which
                     // dropped or covered the gear: re-attach it and keep it on top (~1 s).
@@ -491,7 +537,23 @@ public final class PhoneXRBridge implements SensorEventListener {
     }
 
     /** Gear on the right edge of the phone screen: tap it (before the headset) for VR settings. */
+    /** Roblox re-creates its views after we start: keep our touch layer and reticle attached and on top. */
+    private void ensureOverlays() {
+        ViewGroup content = activity.findViewById(android.R.id.content);
+        if (content == null) return;
+        for (View v : new View[]{clickOverlay, reticle}) {
+            if (v == null) continue;
+            if (v.getParent() != content) {
+                if (v.getParent() != null) ((ViewGroup) v.getParent()).removeView(v);
+                activity.addContentView(v, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            } else {
+                v.bringToFront();
+            }
+        }
+    }
+
     private void ensureSettingsButton() {
+        ensureOverlays();
         if (settingsGear == null) { addSettingsButton(); return; }
         ViewGroup parent = (ViewGroup) settingsGear.getParent();
         if (parent == null || parent != activity.findViewById(android.R.id.content)) {
@@ -547,7 +609,7 @@ public final class PhoneXRBridge implements SensorEventListener {
         root.setBackground(panel);
 
         TextView title = new TextView(activity);
-        title.setText("Настройки VR · Alpha 26.3.0");
+        title.setText("Настройки VR · Alpha 26.3.1");
         title.setTextColor(0xFFE4E2E6);
         title.setTextSize(21f);
         title.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
@@ -568,6 +630,13 @@ public final class PhoneXRBridge implements SensorEventListener {
         });
 
         addSwitchRow(root, d, prefs, "🖥", "Сверхширокий экран", "pref_ultrawide", false);
+        // Experimental, marked with a red outline.
+        final android.widget.LinearLayout noCtl = addSwitchRow(root, d, prefs, "🖐", "Без контроллера (эксперимент)", "pref_no_controller", false);
+        GradientDrawable redBg = new GradientDrawable();
+        redBg.setColor(0x14FFFFFF);
+        redBg.setCornerRadius(18 * d);
+        redBg.setStroke((int) (2 * d), 0xFFE53935);
+        noCtl.setBackground(redBg);
         addSwitchRow(root, d, prefs, "🔁", "Поменять стики", "pref_swap_sticks", false);
         addSwitchRow(root, d, prefs, "👋", "Скелет рук", "pref_hand_skeleton", false);
         // Controller kind; camera hand tracking is available for every kind (off by default).
@@ -582,6 +651,7 @@ public final class PhoneXRBridge implements SensorEventListener {
             prefs.edit().putInt("controller_kind", next).apply();
             kindValue.setText(kinds[next]);
         });
+        addSwitchRow(root, d, prefs, "🧊", "6DoF (ARCore)", "pref_6dof", false);
         addSwitchRow(root, d, prefs, "🏃", "Прыжок телом", "pref_body_jump", true);
 
         TextView done = new TextView(activity);
@@ -678,7 +748,8 @@ public final class PhoneXRBridge implements SensorEventListener {
     private void loadPreferences() {
         SharedPreferences preferences = activity.getSharedPreferences("roblox_vr", Context.MODE_PRIVATE);
         int kind = preferences.getInt("controller_kind", 0);
-        cameraHands = preferences.getBoolean("camera_hands2", false); // any controller, off by default
+        noController = preferences.getBoolean("pref_no_controller", false);
+        cameraHands = noController || preferences.getBoolean("camera_hands2", false); // off by default
         touchLayout = preferences.getBoolean("touch_layout", true);
         // Roblox Android gamepad types: 0 generic, 1 PS4, 2 PS5, 3 Xbox. There is no
         // Touch type, so the Joy-Con buttons go out as a generic VR-style gamepad.
@@ -693,15 +764,25 @@ public final class PhoneXRBridge implements SensorEventListener {
         vrKeyboardEnabled = preferences.getBoolean("pref_vr_keyboard", true);
         handsVisible = preferences.getBoolean("pref_hands", true);
         handSkeleton = preferences.getBoolean("pref_hand_skeleton", false);
-        sixDof = preferences.getBoolean("pref_6dof2", false);
+        sixDof = preferences.getBoolean("pref_6dof", false);
         bodyJump = preferences.getBoolean("pref_body_jump", true);
         cardboardHeadEnabled = preferences.getBoolean("pref_head_cardboard", true);
     }
 
     /** Camera owner: ARCore when 6DoF is on (and ARCore is installed), camera2 otherwise. */
+    private boolean cameraAsked;
+
     private void updateCameraSource() {
-        if (sixDof) Log.i(TAG, "6DoF check: resumed=" + resumed + " running=" + running + " avail=" + ArCoreHead.available(activity));
-        if (sixDof) Log.i(TAG, "6DoF check: resumed=" + resumed + " running=" + running);
+        // ARCore and camera hand tracking both need the camera: ask once, then wait for the answer.
+        if ((sixDof || cameraHands) && activity.checkSelfPermission(android.Manifest.permission.CAMERA)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            if (!cameraAsked) {
+                cameraAsked = true;
+                try { activity.requestPermissions(new String[]{android.Manifest.permission.CAMERA}, 4242); }
+                catch (Throwable error) { Log.w(TAG, "camera permission request failed", error); }
+            }
+            return;
+        }
         boolean wantAr = sixDof && resumed && running && (arCore == null || !arCore.failedRecently())
                 && ArCoreHead.available(activity);
         if (sixDof && !wantAr && !arInstallPrompted && ArCoreHead.needsInstall(activity)) {

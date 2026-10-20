@@ -18,3 +18,4 @@
 #define RBX_VR_FLAG_SLOT 0x7034fc8UL      /* byte: 1 while VR mode is on; read by the patched getters */
 #define CHK_VR_ENABLED_GET 0x148cd9edu  /* b cave0 */
 #define CHK_AVATAR_GET 0x17de5bbau
+#define CHK_SET_CAMERA 0xd10303ffu

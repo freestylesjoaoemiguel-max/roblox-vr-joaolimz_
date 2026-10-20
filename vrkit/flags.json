@@ -1,0 +1,21 @@
+{
+ "lobby": {
+  "FFlagDebugEnableVREmulator": "True",
+  "FFlagDebugVRAppBuildInStudio": "True",
+  "FFlagDUARPassVREnabled": "True",
+  "FFlagExposeOpenXrAPI1": "True",
+  "FFlagUserFlagEnableVRUpdate2": "True",
+  "FFlagUserFlagEnableVRUpdate3": "True"
+ },
+ "main": {
+  "FFlagDebugEnableVREmulator": "True",
+  "FFlagDebugVRAppBuildInStudio": "True",
+  "FFlagDUARPassVREnabled": "True",
+  "FFlagExposeOpenXrAPI1": "True",
+  "FFlagUserFlagEnableVRUpdate2": "True",
+  "FFlagUserFlagEnableVRUpdate3": "True",
+  "FFlagDebugGraphicsPreferOpenGL": "True",
+  "FFlagDebugGraphicsDisableVulkan": "True",
+  "FFlagDebugGraphicsDisableOpenGL": "False"
+ }
+}

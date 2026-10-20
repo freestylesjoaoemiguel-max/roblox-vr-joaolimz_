@@ -758,14 +758,16 @@ static bool resolve_roblox_vr(void) {
     if (jni == 0) { rbx_state = 0; return false; }
     uintptr_t base = jni - RBX_SET_CAMERA_JNI;
     const struct { uintptr_t offset; uint32_t insn; } checks[] = {
-        {RBX_SET_CAMERA_JNI, 0xd10303ffu},  /* sub sp, sp, #0xc0 */
+        {RBX_SET_CAMERA_JNI, CHK_SET_CAMERA},  /* sub sp, sp, #N */
         {RBX_USERCFRAME_READ, CHK_USERCFRAME_READ},   /* add x21, x0, #USERCFRAMES */
         {RBX_GET_USERCFRAME_ENABLED + 4, CHK_GET_ENABLED}, /* ldrb w0, [x8, #USERCFRAME_ENABLED] */
         {RBX_SET_USERCFRAME, 0xd10543ffu},             /* sub sp, sp, #0x150 */
         {RBX_SET_USERCFRAME_ENABLED, 0xd100c3ffu},     /* sub sp, sp, #0x30 */
         {RBX_FRAME_TRAMPOLINE, CHK_TRAMPOLINE},           /* adrp x16, slot page */
         /* Reflection getters take VRService+0xc0; both are patched to return true. */
+#if RBX_AVATAR_GESTURES_GET
         {RBX_AVATAR_GESTURES_GET, CHK_AVATAR_GET},
+#endif
         {RBX_VR_ENABLED_GET, CHK_VR_ENABLED_GET},
     };
     for (size_t i = 0; i < sizeof(checks) / sizeof(checks[0]); i++) {
@@ -896,7 +898,9 @@ __attribute__((visibility("default"))) void pxr_frame_hook(uint8_t *vr) {
     if (!ready) return;
 
     int virtual_input = vr[VRSERVICE_VIRTUAL_INPUT] ? 1 : 0;
+#if VRSERVICE_AVATAR_GESTURES
     vr[VRSERVICE_AVATAR_GESTURES] = 1;
+#endif
     /* Enabling fires UserCFrameEnabled in Lua; only do it when a slot is actually off. */
     for (int type = 0; type < 3; type++)
         if (!vr[VRSERVICE_USERCFRAME_ENABLED + type]) rbx_set_user_cframe_enabled(vr, type, 1, virtual_input);

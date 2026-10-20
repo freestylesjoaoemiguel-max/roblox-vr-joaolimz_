@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 swift build -c release 2>&1 | tail -1
 A=dist/RobloxVRPatcher.app; rm -rf $A dist/RobloxVRPatcher.dmg; mkdir -p dist $A/Contents/MacOS $A/Contents/Resources
 cp .build/release/RobloxVRPatcher $A/Contents/MacOS/
-rsync -a --exclude '__pycache__' --exclude build_payload.sh --exclude package_app.sh --exclude gen_profile_3218.py vrkit $A/Contents/Resources/
+rsync -a --exclude '__pycache__' --exclude build_payload.sh --exclude package_app.sh --exclude "gen_profile_*.py" vrkit $A/Contents/Resources/
 cat > $A/Contents/Info.plist <<'P'
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
 <key>CFBundleName</key><string>Roblox VR Patcher</string><key>CFBundleDisplayName</key><string>Roblox VR Patcher</string><key>CFBundleExecutable</key><string>RobloxVRPatcher</string>

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Dev helper: swap bridge dex + libphonexrvr in an already patched APK, re-sign, install. usage: fast_update.py in.apk out.apk"""
+"""Dev helper: swap bridge dex + libphonexrvr in an already patched APK, re-sign, install. usage: fast_update.py in.apk out.apk VERSIONCODE"""
 import glob, os, subprocess, sys, zipfile, shutil, tempfile
 KIT = os.path.dirname(os.path.abspath(__file__)); PL = KIT + "/payload"
-src, out = sys.argv[1:3]
+src, out, ver = sys.argv[1:4]  # ver = Roblox versionCode of the profile, e.g. 3222
 os.environ["PATH"] = sorted(glob.glob(os.path.expanduser("~/Library/Android/sdk/build-tools/3*")))[-1] + ":/opt/homebrew/bin:" + os.environ["PATH"]
 t = tempfile.mkdtemp(); u = t + "/u.apk"
-repl = {"classes4.dex": PL + "/dex/classes.dex", "lib/arm64-v8a/libphonexrvr.so": PL + "/lib/libphonexrvr_3218.so"}
+repl = {"classes4.dex": PL + "/dex/classes.dex", "lib/arm64-v8a/libphonexrvr.so": PL + "/lib/libphonexrvr_" + ver + ".so"}
 with zipfile.ZipFile(src) as zi, zipfile.ZipFile(u, "w") as zo:
     for it in zi.infolist():
         if it.filename.startswith("META-INF/") and it.filename.endswith((".SF", ".RSA", ".MF")): continue

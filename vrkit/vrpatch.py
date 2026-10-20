@@ -5,6 +5,7 @@ into one installable APK (package com.samrat.roblox.vr) with the Cardboard VR br
 usage: vrpatch.py INPUT OUTPUT.apk
 """
 import glob
+import hooks
 import json
 import os
 import re
@@ -16,6 +17,7 @@ import tempfile
 import zipfile
 
 KIT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, KIT)
 NEW_PKG = "com.samrat.roblox.vr"
 OLD_PKG = "com.roblox.client"
 KEYSTORE = os.path.expanduser("~/.robloxvr.keystore")
@@ -123,6 +125,13 @@ def patch_manifest(src):
         tag = re.sub(r' android:screenOrientation="[^"]*"', "", m.group(0))
         return tag[:-1].rstrip("/") + ' android:screenOrientation="sensorLandscape"' + ("/>" if m.group(0).endswith("/>") else ">")
     s = re.sub(r'<activity [^>]*android:name="com\.roblox\.client\.(?:startup\.ActivitySplash|ActivityNativeMain|startup\.MainGameActivity)"[^>]*>', _landscape, s)
+    # ARCore (optional 6DoF head position) needs these markers
+    if 'android:name="com.google.ar.core"' not in s:
+        s = s.replace("</application>", '<meta-data android:name="com.google.ar.core" android:value="optional"/><meta-data android:name="com.google.ar.core.min_apk_version" android:value="242040000"/><activity android:name="com.google.ar.core.InstallActivity" android:configChanges="keyboardHidden|orientation|screenSize" android:excludeFromRecents="true" android:exported="false" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.Light.Dialog.Alert"/></application>', 1)
+        if "<queries>" in s:
+            s = s.replace("<queries>", '<queries><package android:name="com.google.ar.core"/>', 1)
+        else:
+            s = s.replace("<application", '<queries><package android:name="com.google.ar.core"/></queries><application', 1)
     if "android.hardware.vr.headtracking" not in s:
         s = s.replace("<application", '<uses-feature android:name="android.hardware.vr.headtracking" android:required="false"/><application', 1)
     open(p, "w", encoding="utf-8").write(s)
@@ -173,14 +182,17 @@ def main():
         run(["apktool", "d", "-f", apk, "-o", src])
         ver = read_version(src)
         pdir = os.path.join(KIT, "profiles", str(ver))
-        if not os.path.isdir(pdir):
-            sup = sorted(os.listdir(os.path.join(KIT, "profiles")))
+        if not os.path.isfile(os.path.join(pdir, "profile.json")):
+            sup = sorted(d for d in os.listdir(os.path.join(KIT, "profiles")) if os.path.isfile(os.path.join(KIT, "profiles", d, "profile.json")))
             die(f"версия Roblox {ver} пока не поддерживается. Поддерживаются: {', '.join(sup)}")
         profile = json.load(open(os.path.join(pdir, "profile.json")))
         print(f"    Roblox build {ver}", flush=True)
 
         step(3, "Вшиваю хуки в Java-код…")
-        run(["patch", "-p1", "--no-backup-if-mismatch", "-d", src, "-i", os.path.join(pdir, "smali.patch")])
+        try:
+            hooks.apply_all(src, KIT)
+        except hooks.HookError as e:
+            die(f"не удалось вшить хуки в эту версию Roblox: {e}")
         apply_stubs(src, pdir, profile)
 
         step(4, "Манифест: отдельный пакет com.samrat.roblox.vr…")
