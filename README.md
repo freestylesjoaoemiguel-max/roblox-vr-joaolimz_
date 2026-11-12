@@ -7,18 +7,18 @@ A Mac app (SwiftUI) and a patcher that turn a stock **Roblox for Android** packa
 > Unofficial project, not affiliated with Roblox Corporation. This repository contains **no Roblox code and no Roblox APK**.
 > You supply your own Roblox package. Use at your own risk (modified clients may violate Roblox's terms).
 
-Supported Roblox builds: **2.741 (3218)** and **2.742 (3222)**, arm64 only (64-bit phones). Other builds need a new native profile (`vrkit/profiles/<versionCode>/`, `phonexr-bridge/native/profiles/`); the Java hooks (`vrkit/hooks.py`) are found by method names and code shape, so they usually carry over.
+Supported Roblox builds: **2.741 (3218)** and **2.742 (3222)**, arm64 only (64-bit phones). Other builds need a new native profile (`vrkit/profiles/<versionCode>/`, `phonexr-bridge/native/profiles/`); the Java hooks (`patcher/.../Hooks.kt`) are found by method names and code shape, so they usually carry over.
 
 ## How it works
-1. `vrkit/vrpatch.py` merges a split bundle (`.apk/.apkm/.xapk/.apks/.zip` or a folder) into one APK with APKEditor and decodes it with apktool.
-2. Applies the Java hooks (`vrkit/hooks.py` + method stubs from the profile), renames the package to `com.samrat.roblox.vr`, forces landscape, adds the ARCore markers.
+1. The Kotlin patcher (`patcher/`, entry `Patcher.kt`) merges a split bundle (`.apk/.apkm/.xapk/.apks/.zip` or a folder) into one APK with APKEditor and decodes it with apktool.
+2. Applies the Java hooks (`Hooks.kt` + method stubs from the profile), renames the package to `com.samrat.roblox.vr`, forces landscape, adds the ARCore markers.
 3. Patches `libroblox.so` (VR mode switch, frame hook, GLES) using the byte patches in `profiles/<versionCode>/profile.json` (regenerate with `vrkit/gen_profile_*.py`).
 4. Adds the bridge: `phonexr-bridge/src` (Java: head tracking, controllers, settings, loading screen) and `phonexr-bridge/native`
    (`libphonexrvr.so`: Cardboard compositor, per-profile offsets in `native/profiles/`).
 5. Rebuilds, zip-aligns and signs the APK.
 
 ## Build
-Requirements (macOS): Xcode / Swift 5.9+, Python 3, `brew install apktool openjdk`, Android SDK build-tools (zipalign, apksigner),
+Requirements (macOS): Xcode / Swift 5.9+, JDK 17+ and Gradle (the patcher is written in Kotlin), Python 3 (profile generators only), `brew install apktool openjdk`, Android SDK build-tools (zipalign, apksigner),
 Android NDK 27 and platform android-35.
 
 ```bash
@@ -30,7 +30,8 @@ vrkit/package_app.sh         # builds dist/RobloxVRPatcher.app and .dmg and inst
 Or use the CLI directly:
 
 ```bash
-python3 vrkit/vrpatch.py Roblox.apks RobloxVR.apk
+(cd patcher && gradle shadowJar)
+java -jar patcher/build/libs/RobloxVRPatcher.jar --kit vrkit Roblox.apks RobloxVR.apk
 adb install -r -d RobloxVR.apk
 ```
 

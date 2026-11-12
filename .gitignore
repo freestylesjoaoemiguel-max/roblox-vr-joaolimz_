@@ -11,3 +11,8 @@ vrkit/tools/*.jar
 *.xapk
 *.keystore
 *.idsig
+patcher/build/
+patcher/.gradle/
+.gradle/
+__pycache__/
+.kotlin/

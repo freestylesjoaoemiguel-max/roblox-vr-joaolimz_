@@ -58,7 +58,7 @@ struct ContentView: View {
         guard let i = input else { return }
         let base = i.deletingPathExtension().path
         let out = (i.pathExtension.isEmpty ? i.path : base) + "-vr.apk"
-        exec(["/usr/bin/python3", "-u", kitDir + "/vrpatch.py", i.path, out]) { ok in if ok { output = out } }
+        exec(["java", "-jar", kitDir + "/RobloxVRPatcher.jar", "--kit", kitDir, i.path, out]) { ok in if ok { output = out } }
     }
 
     func install() {
