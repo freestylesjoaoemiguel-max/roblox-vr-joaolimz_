@@ -9,6 +9,8 @@ A Mac app (SwiftUI) and a patcher that turn a stock **Roblox for Android** packa
 
 Supported Roblox builds: **2.741 (3218)** and **2.742 (3222)**, arm64 only (64-bit phones). Other builds need a new native profile (`vrkit/profiles/<versionCode>/`, `phonexr-bridge/native/profiles/`); the Java hooks (`patcher/.../Hooks.kt`) are found by method names and code shape, so they usually carry over.
 
+**Créditos : joaolimz_ - samrat** (MIT, veja `LICENSE` e `NOTICE`; a linha de créditos aparece no canto superior direito do app VR, do app Mac e do patcher).
+
 ## How it works
 1. The Kotlin patcher (`patcher/`, entry `Patcher.kt`) merges a split bundle (`.apk/.apkm/.xapk/.apks/.zip` or a folder) into one APK with APKEditor and decodes it with apktool.
 2. Applies the Java hooks (`Hooks.kt` + method stubs from the profile), renames the package to `com.samrat.roblox.vr`, forces landscape, adds the ARCore markers.

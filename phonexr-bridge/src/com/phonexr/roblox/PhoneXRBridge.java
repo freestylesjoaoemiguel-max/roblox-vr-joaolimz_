@@ -335,6 +335,7 @@ public final class PhoneXRBridge implements SensorEventListener {
     /** Phone-UI phase: flat Roblox + a bar. The user logs in / picks a game, then starts VR. */
     private View clickOverlay;
     private View reticle;
+    private View credits;
 
     /** A small dot in the centre of each eye: where the gaze pointer clicks in the home menu. */
     private final class Reticle extends View {
@@ -380,6 +381,9 @@ public final class PhoneXRBridge implements SensorEventListener {
             reticle.setElevation(1000f);
             reticle.setWillNotDraw(false);
             activity.addContentView(reticle, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            credits = new Credits.CreditView(activity);
+            credits.setElevation(1001f);
+            activity.addContentView(credits, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             if (settingsGear != null) settingsGear.bringToFront();
         });
     }
@@ -541,7 +545,7 @@ public final class PhoneXRBridge implements SensorEventListener {
     private void ensureOverlays() {
         ViewGroup content = activity.findViewById(android.R.id.content);
         if (content == null) return;
-        for (View v : new View[]{clickOverlay, reticle}) {
+        for (View v : new View[]{clickOverlay, reticle, credits}) {
             if (v == null) continue;
             if (v.getParent() != content) {
                 if (v.getParent() != null) ((ViewGroup) v.getParent()).removeView(v);

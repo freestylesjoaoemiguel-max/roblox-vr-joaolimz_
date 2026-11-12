@@ -33,6 +33,9 @@ struct ContentView: View {
                 .padding(8).background(Color.black.opacity(0.08)).cornerRadius(8)
         }
         .padding().frame(minWidth: 620, minHeight: 440)
+        .overlay(alignment: .topTrailing) {
+            Text("créditos : joaolimz_ - samrat").font(.caption.bold()).foregroundColor(.secondary).padding(8).allowsHitTesting(false)
+        }
         .onDrop(of: [.fileURL], isTargeted: $hover) { items in
             items.first?.loadItem(forTypeIdentifier: "public.file-url") { d, _ in
                 guard let d = d as? Data, let u = URL(dataRepresentation: d, relativeTo: nil) else { return }
