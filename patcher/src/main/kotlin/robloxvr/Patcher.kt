@@ -180,6 +180,7 @@ class Patcher(private val kit: File, private val log: (String) -> Unit = { print
     }
 
     fun patch(inp: File, out: File) {
+        if (!Credits.intact()) throw PatchError("créditos alterados")
         if (!inp.exists()) throw PatchError("arquivo não encontrado: $inp")
         findTools()
         val work = Files.createTempDirectory("robloxvr-").toFile()

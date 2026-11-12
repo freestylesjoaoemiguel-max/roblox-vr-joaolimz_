@@ -1,5 +1,14 @@
 import SwiftUI
 import AppKit
+import CryptoKit
+
+/// Credit line, stored encoded + hashed: the Patch button stays disabled if it was altered.
+enum Credits {
+    static let e: [UInt8] = [57,19,171,198,18,20,240,228,225,185,154,135,196,218,221,172,166,184,181,165,185,205,217,219,113,104,125,101,127,81]
+    static let h = "1b8293f0fe3ffe07ab3fcbc439c38c86e1e42269bbe97bce7d95b994b23deb5a"
+    static var text: String { String(decoding: e.enumerated().map { UInt8(truncatingIfNeeded: Int($0.element) ^ (0x5A + $0.offset * 7)) }, as: UTF8.self) }
+    static var intact: Bool { SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined() == h }
+}
 
 let kitDir = Bundle.main.resourcePath.map { $0 + "/vrkit" } ?? (CommandLine.arguments[0] + "/../../../vrkit")
 let exts = ["apk", "apkm", "xapk", "apks", "zip"]
@@ -23,7 +32,7 @@ struct ContentView: View {
                 }.padding()
             }.frame(height: 110)
             HStack {
-                Button("Сделать VR-версию") { patch() }.disabled(input == nil || busy).keyboardShortcut(.defaultAction)
+                Button("Сделать VR-версию") { patch() }.disabled(input == nil || busy || !Credits.intact).keyboardShortcut(.defaultAction)
                 Button("Установить на телефон (adb)") { install() }.disabled(output == nil || busy)
                 Button("Показать в Finder") { if let o = output { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: o)]) } }.disabled(output == nil)
                 Spacer()
@@ -34,7 +43,7 @@ struct ContentView: View {
         }
         .padding().frame(minWidth: 620, minHeight: 440)
         .overlay(alignment: .topTrailing) {
-            Text("créditos : joaolimz_ - samrat").font(.caption.bold()).foregroundColor(.secondary).padding(8).allowsHitTesting(false)
+            Text(Credits.intact ? Credits.text : "créditos alterados").font(.caption.bold()).foregroundColor(.secondary).padding(8).allowsHitTesting(false)
         }
         .onDrop(of: [.fileURL], isTargeted: $hover) { items in
             items.first?.loadItem(forTypeIdentifier: "public.file-url") { d, _ in

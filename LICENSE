@@ -23,3 +23,19 @@ SOFTWARE.
 Third-party code keeps its own license: phonexr-bridge/native/cardboard is the
 Google Cardboard SDK (Apache-2.0, see its LICENSE). MediaPipe, ARCore and the
 support libraries are downloaded by scripts/fetch_deps.sh under their own licenses.
+
+----------------------------------------------------------------------
+Additional condition (attribution) / Condição adicional (atribuição)
+
+The credit line "créditos : joaolimz_ - samrat", as displayed by the VR
+overlay, the Mac app and the command-line patcher, is part of the Software.
+Any copy or derivative work, in source or binary form, must keep that line
+visible, unmodified, in the user interface. Removing, hiding, altering or
+bypassing the credit line (including its integrity checks) revokes the
+permissions granted above.
+
+A linha "créditos : joaolimz_ - samrat", exibida pelo overlay VR, pelo app
+Mac e pelo patcher, faz parte do Software. Toda cópia ou obra derivada deve
+mantê-la visível e inalterada na interface. Remover, ocultar, alterar ou
+contornar a linha de créditos (inclusive suas verificações de integridade)
+revoga as permissões concedidas acima.

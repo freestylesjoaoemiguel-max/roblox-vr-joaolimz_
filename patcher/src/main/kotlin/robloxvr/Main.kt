@@ -17,8 +17,6 @@ private fun findKit(explicit: String?): File {
         ?: run { println("ERRO: pasta vrkit não encontrada (use --kit DIR ou ROBLOXVR_KIT)"); exitProcess(1) }
 }
 
-const val CREDITS = "créditos : joaolimz_ - samrat"
-
 fun main(args: Array<String>) {
     System.setOut(java.io.PrintStream(java.io.FileOutputStream(java.io.FileDescriptor.out), true, "UTF-8"))
     var kit: String? = null
@@ -31,7 +29,8 @@ fun main(args: Array<String>) {
         else pos += args[i]
         i++
     }
-    println(CREDITS)
+    if (!Credits.intact()) { println("ERRO: créditos alterados. Restaure o arquivo Credits.kt original."); exitProcess(3) }
+    println(Credits.text())
     hooksOnly?.let {
         try { Hooks.applyAll(File(it), findKit(kit)) } catch (e: HookError) { println("ERRO: ${e.message}"); exitProcess(1) }
         return

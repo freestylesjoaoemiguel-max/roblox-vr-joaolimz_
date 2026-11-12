@@ -389,6 +389,10 @@ public final class PhoneXRBridge implements SensorEventListener {
     }
 
     private void startVr() {
+        if (!Credits.intact() || credits == null || credits.getParent() == null) {
+            Log.e(TAG, "credits missing or altered: VR will not start");
+            return;
+        }
         boolean ok = false;
         try { ok = setVrMode(true); } catch (Throwable t) { Log.w(TAG, "setVrMode failed", t); }
         Log.i(TAG, "VR mode " + (ok ? "on" : "not ready yet"));
@@ -547,6 +551,7 @@ public final class PhoneXRBridge implements SensorEventListener {
         if (content == null) return;
         for (View v : new View[]{clickOverlay, reticle, credits}) {
             if (v == null) continue;
+            if (v == credits) Credits.enforce(v);
             if (v.getParent() != content) {
                 if (v.getParent() != null) ((ViewGroup) v.getParent()).removeView(v);
                 activity.addContentView(v, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
